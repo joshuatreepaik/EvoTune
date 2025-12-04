@@ -1,0 +1,37 @@
+name: Build EvoTune Docker Image
+
+on:
+  workflow_dispatch:   # run manually
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    # QEMU needed to emulate amd64 if runner is arm
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      id: build
+      with:
+        context: ./installation/docker-amd64-cuda-vllm
+        file: ./installation/docker-amd64-cuda-vllm/Dockerfile
+        tags: evotune-vllm:latest
+        outputs: type=docker,dest=/tmp/evotune-vllm.tar
+
+    - name: Upload Docker tar as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: evotune-vllm
+        path: /tmp/evotune-vllm.tar
